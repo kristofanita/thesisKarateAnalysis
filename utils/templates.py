@@ -1,0 +1,7 @@
+SCORE = "Score: {0}"
+MAX_ACC = "Maximum acceleration: {}"
+PUNCH_TIME = "Punch time: {0}"
+SECONDARY_PUSH_AMPL = "Secondary push amplitude: {0}"
+TOTAL_ENERGY = "Total energy on upper part of Makiwara: {0}"
+X_PERCENTAGE = "Lateral energy loss of total energy (%): {0}"
+TOTAL_ENERGY2 = "Total energy on lower part of Makiwara: {0}"
