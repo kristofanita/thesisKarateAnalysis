@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import multiprocessing as mp
 
 def init():
     global rawDataFrame
@@ -8,11 +9,8 @@ def init():
     global currentMeasurementStats
     currentMeasurementStats = pd.DataFrame()
     
-    global time_vector, start_time, end_time
-    start_time = '2024.04.30-01:33:43.800573'
-    end_time = '2024.04.30-01:34:13.805039'
-    time_vector = []
+    global time_vector
+    time_vector = None
 
     global timeInput
     timeInput = 60
-

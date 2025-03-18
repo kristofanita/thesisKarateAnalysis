@@ -18,7 +18,7 @@ from backend import global_vars
 Ui_AdminWindow, BaseFeedbackWindow = uic.loadUiType("./ui/admin.ui")
 #QMainWindow
 class Admin(Ui_AdminWindow, BaseFeedbackWindow):
-    makiwara = Makiwara()
+    # makiwara = Makiwara()
     def __init__(self, parent):
         super().__init__()
         self.setupUi(self)

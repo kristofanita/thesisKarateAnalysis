@@ -13,24 +13,25 @@ import multiprocessing as mp
 from backend import global_vars
 
 class Makiwara(object):
-    #myKx = opt_kx13x.QwiicKX134(bus=1, address=0x1f) # bus=1
-    myKx2 = opt_kx13x.QwiicKX134(bus=3, address=0x1e) # bus=3
-    GPIO_IT1 = 17 # 17 a most hasznalt GND alatt 1el, 27--> GND alatt 2. és 22 -->GND alatt 3.
-    GPIO_IT2 = 22
-    range_G1 = -1
-    range_G2 = -1
-    hz1 = -1
-    hz2 = -1    
-    manager = mp.Manager()
-    accel = manager.list()
-    accel2 = manager.list()
-    t1 = manager.list() # save start and end time of accelerometer1 read
-    t2 = manager.list() # same for accelerometer2
-        #p1 = mp.Process(target=read_accelero, args=(1, GPIO_IT1, myKx, accel, t1))
-    p2 = None
     
     def __init__(self):
+        self.myKx = opt_kx13x.QwiicKX134(bus=1, address=0x1f) # bus=1
+        self.myKx2 = opt_kx13x.QwiicKX134(bus=3, address=0x1e) # bus=3
+        self.GPIO_IT1 = 17 # 17 a most hasznalt GND alatt 1el, 27--> GND alatt 2. és 22 -->GND alatt 3.
+        self.GPIO_IT2 = 22
+        self.range_G1 = -1
+        self.range_G2 = -1
+        self.hz1 = -1
+        self.hz2 = -1    
+        self.manager = mp.Manager()
+        self.accel = self.manager.list()
+        self.accel2 = self.manager.list()
+        self.t1 = self.manager.list() # save start and end time of accelerometer1 read
+        self.t2 = self.manager.list() # same for accelerometer2
+        self.p1 = None
+        self.p2 = None
         self.setupSensors()
+        self.p1 = mp.Process(target=self.read_accelero, args=(1, self.GPIO_IT1, self.myKx, self.accel, self.t1))
         self.p2 = mp.Process(target=self.read_accelero, args=(2, self.GPIO_IT2, self.myKx2, self.accel2, self.t2))
     
 
@@ -45,54 +46,53 @@ class Makiwara(object):
             
         """
             setup acceleros
-            """
-        """if self.myKx.is_connected() == False:
+        """
+        if self.myKx.is_connected() == False:
             print('No connection with accelerometer 1f on bus 1')
-            return"""
+            return
         if self.myKx2.is_connected() == False: # bus=3
             print('No connection with accelerometer')
             return
             
-        """if self.myKx.begin():
+        if self.myKx.begin():
             print('Sensor 1 Ready')
         else:
             print('make sure you are using the KX134')
-        """
+        
         if self.myKx2.begin():
             print('Sensor 2 Ready')
         else:
             print('make sure you are using the KX134')
             
         odr = 9
-        """if self.myKx.set_output_data_rate(odr) == False:
+        if self.myKx.set_output_data_rate(odr) == False:
             print("accelerometer1: output data rate could not be configured")
         else:
             self.hz1 = self.myKx.get_output_data_rate()
             print("accelerometer1 output data rate set to", self.hz1, "Hz")
-        """
+        
         if self.myKx2.set_output_data_rate(odr) == False:
             print("accelerometer2: data rate could not be configured")
         else:
             self.hz2 = self.myKx2.get_output_data_rate()
             print("accelerometer2: output data rate set to", self.hz2, "Hz")
                 
-        #self.myKx.initialize(self.myKx.BUFFER_INTERRUPT_SETTINGS)
-        self.myKx2.initialize(self.myKx2.BUFFER_INTERRUPT_SETTINGS)
-            
-        #self.range_G1 = self.myKx.get_range()
+        self.myKx.initialize(self.myKx.BUFFER_INTERRUPT_SETTINGS)
+        self.myKx2.initialize(self.myKx2.BUFFER_INTERRUPT_SETTINGS)    
+        
+        if self.myKx.set_range(2) == False:
+            print("accelerometer1 could not be configured")
+        else:
+            print("accelerometer1 range set to 32G")
+        if self.myKx2.set_range(2) == False:
+            print("accelerometer2 could not be configured")
+        else:
+            print("accelerometer2 range set to 32G")
+        
+        self.range_G1 = self.myKx.get_range()
         self.range_G2 = self.myKx2.get_range()
         print("Accelerometer range set to:", self.range_G1, "G and", self.range_G2, "G")
-            
-        """
-            in case of BUFFER_INTERRUPT_SETTINGS 32G is configured, so lines below do not needed
-            if myKx.set_range(2) == False:
-                print("accelerometer1 could not be configured")
-            else:
-                print("accelerometer1 range set to 32G")
-            if myKx2.set_range(2) == False:
-                print("accelerometer2 could not be configured")
-            else:
-                print("accelerometer2 range set to 32G")"""
+        
 
             ####################################
      
@@ -102,18 +102,17 @@ class Makiwara(object):
         print("START")
         GPIO.setmode(GPIO.BCM) # BOARD, BCM
         GPIO.setup(GPIO_IT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        run_time = global_vars.timeInput  #60 by default
-        t.append(datetime.now().strftime("%y.%m.%d-%H:%M:%S.%f"))
+        t.append(datetime.now()) # .strptime("%y.%m.%d-%H:%M:%S.%f")
         
-        t_end = time.time() + run_time
+        t_end = time.time() + global_vars.timeInput
         while time.time() < t_end:
             while(GPIO.input(GPIO_IT) == 1):
                 continue  
             for i in range(50):
                 accel.append(myKx.get_raw_accel_data())
-        t.append(datetime.now().strftime("%y.%m.%d-%H:%M:%S.%f"))
+        # t.append(datetime.now().strftime("%y.%m.%d-%H:%M:%S.%f"))
 
-
+    """
     def runMakiwara(self, playButtonEnabled):
         if playButtonEnabled:
             print("Start recording...")
@@ -132,16 +131,26 @@ class Makiwara(object):
                 self.p2.terminate()
                 #self.p1.join()
                 self.p2.join()
+    """
 
     def runMakiwara1(self):
             print("Start recording...")
+            self.p1.start()
             self.p2.start()
             #self.p2.join()
-            print("Stop recording")
             GPIO.cleanup()
 
+    def generate_time_vector(self, start_datetime, end_datetime, num_points):
+        #start_datetime = datetime.strptime(t_start)#  '%Y.%m.%d-%H:%M:%S.%f'
+        #end_datetime = datetime.strptime(t_end, '%Y.%m.%d-%H:%M:%S.%f')
 
-    def convertData(self):
+        time_difference = end_datetime - start_datetime
+        time_step = time_difference / (num_points - 1)
+
+        time_vector = [start_datetime + i * time_step for i in range(num_points)]
+        return time_vector
+    
+    def convertData(self, t_end2):
         """
         process data
         """
@@ -152,7 +161,6 @@ class Makiwara(object):
         x2 = []
         y2 = []
         z2 = []
-        
         for acc in self.accel:
             xData = (self.myKx.convert_number_signed(acc[1] << 8, 16)) | acc[0]
             yData = (self.myKx.convert_number_signed(acc[3] << 8, 16)) | acc[2]
@@ -174,6 +182,7 @@ class Makiwara(object):
             y2.append(round(yData2 * conv_G2, 6))
             z2.append(round(zData2 * conv_G2, 6))
         print("size of x2 list", len(x2))
+        print(x2[0])
         if len(x1) < len(x2):
             for _ in range(len(x2) - len(x1)):
                 x1.insert(len(x1), 0)
@@ -184,18 +193,28 @@ class Makiwara(object):
                 x2.insert(0, 0)
                 y2.insert(0, 0)
                 z2.insert(0, 0)
-        #tmp = pd.DataFrame({'X1':x1, 'Y1':y1, 'Z1':z1, 'X2':x2, 'Y2':y2, 'Z2':z2}) 
-        #global_vars.rawDataFrame.insert(0, "X2", x2)
-        #global_vars.rawDataFrame.insert(1, "Y2", y2)
-        #global_vars.rawDataFrame.insert(2, "Z2", z2)
+        # tmp = pd.DataFrame({'X1':x1, 'Y1':y1, 'Z1':z1, 'X2':x2, 'Y2':y2, 'Z2':z2})
+        if not global_vars.rawDataFrame.empty:
+            global_vars.rawDataFrame = pd.DataFrame()
+        global_vars.rawDataFrame.insert(0, "X1", x1)
+        global_vars.rawDataFrame.insert(1, "Y1", y1)
+        global_vars.rawDataFrame.insert(2, "Z1", z1)
+        global_vars.rawDataFrame.insert(3, "X2", x2)
+        global_vars.rawDataFrame.insert(4, "Y2", y2)
+        global_vars.rawDataFrame.insert(5, "Z2", z2)
 
         #mock data as I have no makiwara and only one sensor
-        df = pd.read_csv("/home/karate/anita-gui-main/data/GLaci.csv", index_col=False, usecols=['X1', 'Y1', 'Z1'])
-        df2 = pd.read_csv("/home/karate/anita-gui-main/data/GLaci2.csv", index_col=False, usecols=['X2', 'Y2', 'Z2'])
+        # df = pd.read_csv("/home/karate/karateProjectFullstack/data/GLaci.csv", index_col=False, usecols=['X1', 'Y1', 'Z1'])
+        # df2 = pd.read_csv("/home/karate/karateProjectFullstack/data/GLaci2.csv", index_col=False, usecols=['X2', 'Y2', 'Z2'])
+        # global_vars.rawDataFrame = pd.concat([df, df2], axis=1)
         
-        global_vars.rawDataFrame = pd.concat([df, df2], axis=1)
         print(global_vars.rawDataFrame.info())
         print(global_vars.rawDataFrame.head())
+        num_points = len(x1)
+        print("num points:", num_points)
+        print("start_time:", self.t1[0])
+        print("end_time:", t_end2)
+        global_vars.time_vector = self.generate_time_vector(self.t1[0], t_end2, num_points)
 
     def plotSaveRawData(self):
         if rawDataFrame.X1 or rawDataFrame.X2:

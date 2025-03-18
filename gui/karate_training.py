@@ -17,7 +17,7 @@ from backend import global_vars
 Ui_KarateTrainingWindow, BaseFeedbackWindow = uic.loadUiType("./ui/karateTraining.ui")
 #QMainWindow
 class KarateTraining(Ui_KarateTrainingWindow, BaseFeedbackWindow):
-    makiwara = Makiwara()
+    makiwara = None
     def __init__(self, parent):
         super().__init__()
         #uic.loadUi("./ui/karateTraining.ui", self)
@@ -83,21 +83,22 @@ class KarateTraining(Ui_KarateTrainingWindow, BaseFeedbackWindow):
 
     def press_play_pause(self):
         if self.play.isEnabled():
-            print("it relates to the play functionality")
-            self.makiwara.runMakiwara1()
-            print("Data collection finished")
+            try:
+                self.makiwara = Makiwara()
+                self.makiwara.runMakiwara1()
+            except AssertionError as e:
+                print("Cannot start the p1, p2 processes again")
             
-            
-        else:
-            print("it relates to the pause functionality")
-            if self.makiwara.p2.is_alive():
-                self.makiwara.p2.terminate()
-                print("TERMINATED")
-                self.makiwara.convertData()
-                dataProcess()
-                print(global_vars.currentMeasurementStats.head())
-                self.grafica = Canvas_grafica_karate()
-                self.verticalLayout_grafica.addWidget(self.grafica)
+        # else:
+        #     print("it relates to the pause functionality")
+        #     if self.makiwara.p2.is_alive():
+        #        self.makiwara.p2.terminate()
+        #        print("TERMINATED")
+        #        self.makiwara.convertData()
+        #        dataProcess()
+                
+        #        self.grafica = Canvas_grafica_karate()
+        #        self.verticalLayout_grafica.addWidget(self.grafica)
         
         self.play.setDisabled(not self.pause.isEnabled())
         self.pause.setDisabled(self.pause.isEnabled())
@@ -105,24 +106,29 @@ class KarateTraining(Ui_KarateTrainingWindow, BaseFeedbackWindow):
         
 
     def stop_training(self):
-        if self.makiwara.p2.is_alive():
-                self.makiwara.p2.terminate()
-                print("TERMINATED")
-                self.makiwara.convertData()
-                dataProcess()
+        if self.makiwara.p1.is_alive() | self.makiwara.p2.is_alive():
+                # self.makiwara.p1.terminate()
+                self.makiwara.p1.kill()
+                # global_vars.t1.append(datetime.now().strftime("%y.%m.%d-%H:%M:%S.%f"))
+                self.makiwara.p2.kill()
+                t_end2 = datetime.now() #.strptime("%y.%m.%d-%H:%M:%S.%f")
+                print("TERMINATED")             # '%Y.%m.%d-%H:%M:%S.%f'
+                self.makiwara.convertData(t_end2)
+                print("starting to process data")
+                if not dataProcess():
+                    self.grafica = Canvas_grafica_karate()
+                    self.verticalLayout_grafica.addWidget(self.grafica)
+                else:
+                    open_new_window(self, Feedback)
         self.pause.setDisabled(True)
         self.play.setDisabled(False)
         
-        open_new_window(self, Feedback)
-
-
 
 class Canvas_grafica_karate(FigureCanvas):
     def __init__(self, parent=None):     
         self.fig = plt.figure(figsize=(5, 5))
         super().__init__(self.fig) 
         self.grafica_datos()
-
 
     def generate_timevector(self):
         start = global_vars.start_time
@@ -140,7 +146,8 @@ class Canvas_grafica_karate(FigureCanvas):
         #.append(t_vec)
 
     def grafica_datos(self):
-        self.generate_timevector()
+        # TODO: ehelyett a mar kesz global_vars.time_vector kell
+        # self.generate_timevector()
         matplotlib.rc('xtick', labelsize=6)
 
         plt.plot(global_vars.time_vector, global_vars.rawDataFrame.X1)

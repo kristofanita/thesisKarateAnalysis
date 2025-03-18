@@ -25,13 +25,14 @@ class MainWindow(QMainWindow):
         self.training = self.findChild(QtWidgets.QPushButton, "karate_training")
         self.training.clicked.connect(lambda: open_new_window(self, KarateTraining))
 
-        self.data_collection = self.findChild(QtWidgets.QPushButton, "data_collection")
+        """self.data_collection = self.findChild(QtWidgets.QPushButton, "data_collection")
         self.data_collection.clicked.connect(
             lambda: open_new_window(self, DataCollection)
         )
 
         self.admin = self.findChild(QtWidgets.QPushButton, "admin")
         self.admin.clicked.connect(lambda: open_new_window(self, Admin))
+        """
 
     def exit_window(self):
         self.close()
