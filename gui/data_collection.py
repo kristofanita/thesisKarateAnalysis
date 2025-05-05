@@ -17,7 +17,7 @@ from backend import global_vars
 Ui_DataCollectionWindow, BaseFeedbackWindow = uic.loadUiType("./ui/dataCollection.ui")
 #QMainWindow
 class DataCollection(Ui_DataCollectionWindow, BaseFeedbackWindow):
-    makiwara = Makiwara()
+    # makiwara = Makiwara()
     def __init__(self, parent):
         super().__init__()
         #uic.loadUi("./ui/dataCollection.ui", self)

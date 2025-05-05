@@ -8,19 +8,25 @@ from PyQt5.QtWidgets import (
     QOpenGLWidget,
     QListView,
     QFrame,
+    QApplication,
 )
 #import pyqtgraph as pg
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 from utils.templates import SCORE, MAX_ACC, PUNCH_TIME, SECONDARY_PUSH_AMPL, TOTAL_ENERGY, X_PERCENTAGE, TOTAL_ENERGY2
-from utils.utils import go_to_previous_window, open_dialog
+from utils.utils import go_to_previous_window, open_dialog, open_new_window
 from gui.save_session import SaveSession
+from gui.profile import Profile
+from gui.karate_plots import PlotFeedback
 from backend import global_vars
+from database.training_db import save_training_session
+
 
 # https://github.com/MagnoEfren/PyQt5/tree/main/Grafica%20con%20Matplotlib%20PyQt5
 
@@ -33,7 +39,13 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
         #uic.loadUi("./ui/feedback.ui", self)
 
         self.setupUi(self)
-        self.grafica = Canvas_grafica()
+        self.grafica = PlotFeedback()
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.geometry()
+        width = int(screen_geometry.width() * 0.9)
+        height = int(screen_geometry.height() * 0.9)
+        self.setGeometry(50, 50, width, height)
+
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(0)
@@ -43,7 +55,7 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         #self.frame.resize(300,300)
-        self.frame.setGeometry(30, 100, 600, 550)
+        self.frame.setGeometry(30, 100, 1300, 900)
         self.frame.setObjectName("frame")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
@@ -65,8 +77,10 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
         print("IN FEEDBACK WINDOW")
         self.verticalLayout_grafica.addWidget(self.grafica)
 
-        print(global_vars.rawDataFrame.info())
-        print(global_vars.rawDataFrame.head())
+        toolbar = NavigationToolbar(self.grafica, self)
+        toolbar.setStyleSheet("background-color: lightblue")
+        self.verticalLayout_grafica.addWidget(self.grafica)
+        self.verticalLayout_grafica.addWidget(toolbar)
 
         self.score = self.findChild(QLabel, "score")
         self.punch_time = self.findChild(QLabel, "punch_time")
@@ -82,6 +96,9 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
             lambda: go_to_previous_window(self, self.parent_window)
         )
 
+        self.profile = self.findChild(QtWidgets.QPushButton, "profile")
+        self.profile.clicked.connect(lambda: open_new_window(self, Profile))
+
         self.save = self.findChild(QPushButton, "save")
         self.save.clicked.connect(self.save_data)
 
@@ -89,13 +106,15 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
         #self.frame_control = self.findChild(QFrame, "qframecontrol")
 
     def set_text(self) -> None:
-        sc = 8
+        
+        #sc = int(mean(global_vars.currentMeasurementStats.Score))
+        sc = global_vars.currentMeasurementStats.Score
         pT = global_vars.currentMeasurementStats.punchTime[1]
         mA = round(mean(global_vars.currentMeasurementStats.max_acc), 3)
         pA = mean(global_vars.currentMeasurementStats.secondaryPushAmpl)
         tE = round(mean(global_vars.currentMeasurementStats.total_energy), 3)
         xP = round(mean(global_vars.currentMeasurementStats.x_resultant_percentage), 3)
-        tE2 = round(mean(global_vars.currentMeasurementStats.total_energY2), 3)
+        tE2 = round(mean(global_vars.currentMeasurementStats.total_energy2), 3)
 
         self.score.setText(SCORE.format(str(sc)))
         self.punch_time.setText(PUNCH_TIME.format(str(pT)))
@@ -109,25 +128,6 @@ class Feedback(Ui_FeedbackWindow, BaseFeedbackWindow):
         # TODO save mechanism
         print("Saving data to DB.")
         # TODO override accept button not to close the whole app
-        open_dialog(self, SaveSession)
-
-
-class Canvas_grafica(FigureCanvas):
-    def __init__(self, parent=None):     
-        self.fig = plt.figure(figsize=(5, 5))
-        super().__init__(self.fig) 
-        self.grafica_datos()
-
-    def grafica_datos(self):
-        matplotlib.rc('xtick', labelsize=6)
-
-        plt.plot(global_vars.time_vector, global_vars.rawDataFrame.X2)
-        plt.plot(global_vars.time_vector, global_vars.rawDataFrame.Y2)
-        plt.plot(global_vars.time_vector, global_vars.rawDataFrame.Z2)
-
-        plt.xticks(rotation=45)
-        plt.title("Accelerometer signals")
-        plt.xlabel("Time: H:M:S")
-        plt.ylabel("Acceleration [G]")
-
-        QtCore.QTimer.singleShot(10, self.grafica_datos)
+        #open_dialog(self, SaveSession)
+        save_training_session()
+        print("Latest session was saved to the database")

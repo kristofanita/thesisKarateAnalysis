@@ -14,12 +14,10 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 from backend import global_vars
+from backend.machineLearningPredictions import get_current_punch_scores
 
 
-#from google.colab import drive
-#drive.mount('/content/drive')
-
-def peak_detection(signal, window_size=3, threshold=5.0):
+def peak_detection(signal, window_size=3, threshold=5.0): # defaultnak 5.0 kell
     peaks = []
     for i in range(len(signal)):
         if i < window_size // 2 or i >= len(signal) - window_size // 2:
@@ -52,16 +50,6 @@ def min_detection(signal, window_size=3, threshold=-5.0):
         if signal[i] == min(signal[i - window_size // 2:i + window_size // 2 + 1]) and signal[i] < threshold:
             peaks.append((i, signal[i]))
     return peaks
-
-def generate_time_vector(start_time, end_time, num_points):
-    start_datetime = datetime.strptime(start_time, '%Y.%m.%d-%H:%M:%S.%f')
-    end_datetime = datetime.strptime(end_time, '%Y.%m.%d-%H:%M:%S.%f')
-
-    time_difference = end_datetime - start_datetime
-    time_step = time_difference / (num_points - 1)
-
-    time_vector = [start_datetime + i * time_step for i in range(num_points)]
-    return time_vector
 
 # reference point should be eg. min or max point, then if before is True: search starting point of the punch. if False: end point of... eg. end point of first sinusoidal wave's period end time
 def search_zero_idx(signal, reference_point, before, threshold):
@@ -132,37 +120,40 @@ def calculate_fourier_parameters(signal, sampling_rate):
     return frequencies, amplitudes, max(phases), max(dominant_frequencies), total_energy, spectral_centroid, max(spectral_density), np.mean(spectral_density), np.mean(frequency_gaps)
 
 def dataProcess():
-    start_time = '2024.04.30-01:33:43.800573'
-    end_time = '2024.04.30-01:34:13.805039'
-    start_time2 = '2024.04.30-01:33:43.806525'
-    end_time2 = '2024.04.30-01:34:13.861598'
-
     df = global_vars.rawDataFrame[['X1', 'Y1', 'Z1']]
     df2 = global_vars.rawDataFrame[['X2', 'Y2', 'Z2']]
+    print("in dataProcess")
+    
+    # fs = 800
+    # num_points = len(df['X1'])
+    # time_vector = generate_time_vector(start_time, end_time, num_points)
 
-    fs = 800
-    num_points = len(df['X1'])
-    time_vector = generate_time_vector(start_time, end_time, num_points)
-
-    num_points2 = len(df2['X2'])
-    time_vector2 = generate_time_vector(start_time2, end_time2, num_points2)
+    # num_points2 = len(df2['X2'])
+    # time_vector2 = generate_time_vector(start_time2, end_time2, num_points2)
 
     jel= df["Z1"]#[1, 3, 2, 5, 4, 7, 6, 9, 8, 6]
-    csucsok = peak_detection(jel, 100, 15)
+    csucsok = peak_detection(jel, 100, 15) # 15 kell
     minimumok = min_detection(jel, 200)
-
+    if csucsok == []:
+        csucsok = peak_detection(jel, 100) # ha kezdo, gyengebb a felhasznalo
+        if csucsok == []:
+            print("There was no punch. Please hit the makiwara!")
+            return False
+        minimumiok = min_detection(jel, 200, -1.5)
+    print("at least one punch was successfully detected")
+    
     jel2 = df2["Z2"]#[1, 3, 2, 5, 4, 7, 6, 9, 8, 6]
     csucsok2 = peak_detection(jel2, 100)
     minimumok2 = min_detection(jel2, 200, threshold=-5)
+
     columns = ['name', 'max_acc', 'min_acc', 'x_peak', 'x_resultant_percentage', 'punchTime', 'push1Period', 'secondaryPushAmpl', 'secondaryPushDiff', 'std', 'mean', 'skewness',
             'kurtosis', 'max_phase', 'dominant_frequency', 'total_energy', 'spectral_centroid', 'max_spectral_density',
             'mean_spectral_density', 'mean_frequency_gaps', 'max_acc_2', 'min_acc_2', 'punchTime2', 'std2', 'mean2', 'skewness2', 'kurtosis2',
-            'max_phase2', 'dominant_frequencY2', 'total_energY2', 'spectral_centroid2', 'max_spectral_densitY2', 'mean_spectral_densitY2',
+            'max_phase2', 'dominant_frequency2', 'total_energy2', 'spectral_centroid2', 'max_spectral_density2', 'mean_spectral_density2',
             'mean_frequency_gaps2']
     hitsList = []
 
-    for i in range(len(csucsok2)):
-        """subplot1 shows acceleroometer 1"""
+    for i in range(len(csucsok2)): # csucsok2 volt itt eddig
         # calculate some values
         csucs0 = csucsok[i][0]
         csucs0val = csucsok[i][1]
@@ -174,15 +165,14 @@ def dataProcess():
             csucs0val = uj_csucs[0][1]
         punchFrom = search_zero_idx(df['Z1'], csucs0, before=True, threshold=1.0)
         punchWavePeriod = search_zero_idx(df['Z1'], min0, before=False, threshold=-2.0)
-        deltaT = (time_vector[punchWavePeriod]-time_vector[punchFrom])
+        deltaT = (global_vars.time_vector[punchWavePeriod]-global_vars.time_vector[punchFrom])
         pushPeriodStr = (datetime(1,1,1,0,0) + deltaT).strftime('%S.%f')
         checkPushTime = df['Z1'][csucs0+100:csucs0+300]
         damped = check_vibration(checkPushTime, window_size=50, tolerance=0.3, threshold=1)
-        dimgray = mcolors.CSS4_COLORS['dimgray']
-        violet = mcolors.CSS4_COLORS['violet']
-        time_point = time_vector[punchFrom]
-        index = find_index(time_vector, time_point)
-        punchTime = (datetime(1,1,1,0,0) + (time_vector[csucs0+100+damped]-time_vector[punchFrom])).strftime('%S.%f')
+        
+        time_point = global_vars.time_vector[punchFrom]
+        index = find_index(global_vars.time_vector, time_point)
+        punchTime = (datetime(1,1,1,0,0) + (global_vars.time_vector[csucs0+100+damped]-global_vars.time_vector[punchFrom])).strftime('%S.%f')
         df_segment = df['Z1'][csucs0:min0].reset_index(drop=True)
         secondary_acc_peak = None
         if csucs0 < min0:
@@ -215,13 +205,9 @@ def dataProcess():
         else:
             x_peak = 0
 
-
-
         std, mean, skewness, kurtosis, maximum, minimum = calculate_timedomain_parameters(df['Z1'][csucs0-10:csucs0+300])
         frequencies, fourier_transform, max_phase, dominant_frequency, total_energy, spectral_centroid, max_spectral_density, mean_spectral_density, mean_frequency_gaps = calculate_fourier_parameters(df['Z1'][csucs0-10:csucs0+300], 800)
         
-
-
         csucs0_2 = csucsok2[i][0]
         csucs0_2val = csucsok2[i][1]
         #csucs1 = csucsok2[i+1][0] if i < len(csucsok2) else len(csucsok2)-1
@@ -232,11 +218,11 @@ def dataProcess():
         damped2 = check_vibration(checkPushTime2, window_size=50, tolerance=0.1)
         #print(damped2)
         #dimgray = mcolors.CSS4_COLORS['dimgray']
-        time_point = time_vector[punchFrom]
+        time_point = global_vars.time_vector[punchFrom]
         #index = find_index(time_vector2, time_point)
         #plt.plot(time_vector2[index], 0, 'm*')
         punchFrom2 = search_zero_idx(df2['Z2'], csucs0_2-10, before=True, threshold=1.0)
-        punchTime2 = (datetime(1,1,1,0,0) + (time_vector2[csucs0_2+damped2]-time_vector2[punchFrom2])).strftime('%S.%f')
+        punchTime2 = (datetime(1,1,1,0,0) + (global_vars.time_vector[csucs0_2+damped2]-global_vars.time_vector[punchFrom2])).strftime('%S.%f')
         
 
 
@@ -244,22 +230,60 @@ def dataProcess():
         frequencies2, fourier_transform2, max_phase2, dominant_frequencY2, total_energY2, spectral_centroid2, max_spectral_densitY2, mean_spectral_densitY2, mean_frequency_gaps2 = calculate_fourier_parameters(df2['Z2'][csucs0_2-10:csucs0_2+300], 800)
 
 
-
-        new_row = {'name': 'unknown', 'max_acc': csucs0val, 'min_acc': min0val, 'x_peak': x_peak[1], 'x_resultant_percentage': x_percentage_acc, 'punchTime': punchTime, 'push1Period': pushPeriodStr,
-                'secondaryPushAmpl': ampl, 'secondaryPushDiff': diff, 'std': std, 'mean': mean, 'skewness': skewness, 'kurtosis': kurtosis,
-                'max_phase': max_phase, 'dominant_frequency': dominant_frequency, 'total_energy': total_energy,
-                'spectral_centroid': spectral_centroid, 'max_spectral_density': max_spectral_density,
-                'mean_spectral_density': mean_spectral_density, 'mean_frequency_gaps': mean_frequency_gaps, 'max_acc_2': csucs0_2val,
-                'min_acc_2': min0_2val, 'punchTime2': punchTime2, 'std2': std2, 'mean2': mean2, 'skewness2': skewness2, 'kurtosis2': kurtosis2,
-                'max_phase2': max_phase2, 'dominant_frequencY2': dominant_frequencY2, 'total_energY2': total_energY2,
-                'spectral_centroid2': spectral_centroid2, 'max_spectral_densitY2': max_spectral_densitY2,
-                'mean_spectral_densitY2': mean_spectral_densitY2, 'mean_frequency_gaps2': mean_frequency_gaps2}
+        name = global_vars.current_user.get_name()
+        new_row = {'name': name, 
+                   'max_acc': csucs0val, 
+                   'min_acc': min0val, 
+                   'x_peak': x_peak[1], 
+                   'x_resultant_percentage': x_percentage_acc, 
+                   'punchTime': punchTime, 
+                   'push1Period': pushPeriodStr,
+                   'secondaryPushAmpl': ampl,
+                   'secondaryPushDiff': diff, 
+                   'std': std, 
+                   'mean': mean, 
+                   'skewness': skewness, 
+                   'kurtosis': kurtosis,
+                   'max_phase': max_phase, 
+                   'dominant_frequency': dominant_frequency, 
+                   'total_energy': total_energy,
+                   'spectral_centroid': spectral_centroid, 
+                   'max_spectral_density': max_spectral_density,
+                   'mean_spectral_density': mean_spectral_density,
+                   'mean_frequency_gaps': mean_frequency_gaps, 
+                   'max_acc_2': csucs0_2val,
+                   'min_acc_2': min0_2val, 
+                   'punchTime2': punchTime2, 
+                   'std2': std2, 
+                   'mean2': mean2, 
+                   'skewness2': skewness2, 
+                   'kurtosis2': kurtosis2,
+                   'max_phase2': max_phase2, 
+                   'dominant_frequency2': dominant_frequencY2, 
+                   'total_energy2': total_energY2,
+                   'spectral_centroid2': spectral_centroid2, 
+                   'max_spectral_density2': max_spectral_densitY2,
+                   'mean_spectral_density2': mean_spectral_densitY2, 
+                   'mean_frequency_gaps2': mean_frequency_gaps2}
+        print("?????????????? new row")
+        print(new_row)
         hitsList.append(new_row)
 
     tmp = pd.DataFrame(hitsList, columns=columns)
+    print(tmp.head())
+    # mock --> itt allt le, valoszinuleg nem tudja a .empty()-t ertelmezni
+    if tmp.empty:
+        print("tmp dataframe is empty")
+        return False
+    else:
+        print("tmp dataframe is filled")
     global_vars.currentMeasurementStats = tmp.copy()
-    saveNameCsv = 'makiwaraPunches' + start_time + '.csv'
-    saveNameXlsx = 'makiwaraPunches' + start_time + '.xlsx'
+    global_vars.currentMeasurementStats['Score'] = pd.Series(get_current_punch_scores(), index=tmp.index)
+    
+    # TODO: convert time to strftime
+    print(type(global_vars.time_vector[0]))
+    saveNameCsv = "/home/karate/karateProjectFullstack/data/" + name + 'MakiwaraPunches' + global_vars.time_vector[0].strftime("%y.%m.%d-%H:%M:%S.%f") + '.csv'
+    #saveNameXlsx = 'makiwaraPunches' + global_vars.time_vector[0] + '.xlsx'
     global_vars.currentMeasurementStats.to_csv(saveNameCsv, mode='w', header=True, index=True)
     
-
+    return True

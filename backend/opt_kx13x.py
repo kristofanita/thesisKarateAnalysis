@@ -1060,7 +1060,7 @@ def readBlock(_i2cbus, address, commandCode, nBytes):
 		try:
 			data = _i2cbus.read_i2c_block_data(address, commandCode, nBytes)
 			break # break if try succeeds
-		except IOError as ioErr:
+		except OSError as ioErr:
 			# we had an error - let's try again
 			if i == retry_count-1:
 				raise ioErr

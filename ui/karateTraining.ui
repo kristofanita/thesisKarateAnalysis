@@ -17,7 +17,7 @@
    <widget class="QLabel" name="title">
     <property name="geometry">
      <rect>
-      <x>210</x>
+      <x>300</x>
       <y>25</y>
       <width>600</width>
       <height>50</height>
@@ -36,8 +36,8 @@
    <widget class="QPushButton" name="back">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>20</y>
+      <x>1500</x>
+      <y>160</y>
       <width>50</width>
       <height>50</height>
      </rect>
@@ -59,8 +59,8 @@
    <widget class="QPushButton" name="profile">
     <property name="geometry">
      <rect>
-      <x>580</x>
-      <y>20</y>
+      <x>1500</x>
+      <y>100</y>
       <width>50</width>
       <height>50</height>
      </rect>
@@ -82,8 +82,8 @@
    <widget class="QPushButton" name="play">
     <property name="geometry">
      <rect>
-      <x>650</x>
-      <y>200</y>
+      <x>1500</x>
+      <y>220</y>
       <width>50</width>
       <height>50</height>
      </rect>
@@ -102,35 +102,13 @@
      </size>
     </property>
    </widget>
-   <widget class="QPushButton" name="pause">
-    <property name="geometry">
-     <rect>
-      <x>700</x>
-      <y>200</y>
-      <width>50</width>
-      <height>50</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../assets/pause_circle.png</normaloff>../assets/pause_circle.png</iconset>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>50</width>
-      <height>50</height>
-     </size>
-    </property>
-   </widget>
+   
    <widget class="QPushButton" name="stop">
     <property name="geometry">
      <rect>
-      <x>650</x>
-      <y>260</y>
-      <width>100</width>
+      <x>1500</x>
+      <y>280</y>
+      <width>50</width>
       <height>50</height>
      </rect>
     </property>
@@ -140,6 +118,30 @@
     <property name="icon">
      <iconset>
       <normaloff>../assets/stop_circle.png</normaloff>../assets/stop_circle.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>50</width>
+      <height>50</height>
+     </size>
+    </property>
+   </widget>
+
+   <widget class="QPushButton" name="leave">
+    <property name="geometry">
+     <rect>
+      <x>1500</x>
+      <y>340</y>
+      <width>50</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../assets/close_50.png</normaloff>../assets/close_50.png</iconset>
     </property>
     <property name="iconSize">
      <size>

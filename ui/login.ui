@@ -48,7 +48,7 @@
     <string>Login</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="username">
+  <widget class="QLineEdit" name="email">
    <property name="geometry">
     <rect>
      <x>128</x>
@@ -74,7 +74,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Username:</string>
+    <string>Email:</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_3">
@@ -106,18 +106,47 @@
     </rect>
    </property>
   </widget>
+  <widget class="QCheckBox" name="show_pwd">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>110</y>
+      <width>150</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Verdana</family>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Show password</string>
+    </property>
+  </widget>
   <widget class="QPushButton" name="signUp">
    <property name="geometry">
     <rect>
      <x>290</x>
      <y>10</y>
-     <width>80</width>
+     <width>25</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
-    <string>Sign Up</string>
-   </property>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../assets/register_50.png</normaloff>../assets/register_50.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>25</width>
+      <height>25</height>
+     </size>
+    </property>
   </widget>
  </widget>
  <resources/>
